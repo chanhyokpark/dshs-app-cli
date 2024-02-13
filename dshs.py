@@ -448,12 +448,12 @@ if (
     except Exception:
         pass
 try:
-    if args.command and "auth" in args.command or "a" in args.command:
+    if args.command in ["auth", "a"]:
         if args.code:
             api.get_code(code=args.code)
         else:
             api.get_code()
-    elif "userinfo" in args.command:
+    elif args.command in ["userinfo"]:
         res = api.userinfo()
         if args.field:
             if args.field in res.keys():
@@ -462,7 +462,7 @@ try:
                 logger.error("존재하지 않는 필드")
         else:
             print(json.dumps(res, indent=4, ensure_ascii=False))
-    elif "penalty" in args.command or "p" in args.command:
+    elif args.command in ["penalty", "p"]:
         res = None
         if not args.recent:
             res = api.penalty((datetime.now() - timedelta(days=7)).strftime("%Y%m%d"))
@@ -488,7 +488,7 @@ try:
                     print()
                 except Exception:
                     pass
-    elif "meal" in args.command:
+    elif args.command in ["meal"]:
         d = None
         if len(args.date) == 4:
             d = datetime.now().year + args.date
@@ -498,13 +498,18 @@ try:
         if not data:
             print("급식 없음")
         else:
-            print(datetime.strptime(d, "%Y%m%d").strftime("%Y년 %m월 %d일") + "의 급식\n")
+            print(
+                bold
+                + datetime.strptime(d, "%Y%m%d").strftime("%Y년 %m월 %d일")
+                + "의 급식\n"
+                + reset
+            )
             mn = ["아침", "점심", "저녁"]
             for i in range(3):
-                print(mn[i])
+                print(bold + mn[i] + reset)
                 print(data[i])
                 print()
-    elif "update" in args.command:
+    elif args.command in "update":
         res = api.check_update()
         if res["update"]:
             print(f'새 버전: {res["version"]}')
@@ -512,7 +517,7 @@ try:
         else:
             print("최신 버전입니다.")
             config.set("update-checked", datetime.now().strftime("%Y%m%d"))
-    elif "reserve" in args.command or "r" in args.command:
+    elif args.command in ["reserve", "r"]:
         query = args.q
         input_date = args.date
         date = datetime.now()
@@ -538,5 +543,6 @@ try:
 
     config.save()
 except Exception as e:
+    print(e)
     logger.info("명령 실행 실패.")
     exit(1)
