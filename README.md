@@ -18,7 +18,7 @@ ln -s ~/.local/bin/dshs {path/to/dshs.py}
 ```
 ({path/to/dshs.py}를 해당 위치로 변경)
 ## Windows
-dshs.py 파일을 다운로드하고 ```PATH``` 시스템 환경 변수에 다운로드한 경로 추가
+dshs.py 파일을 다운로드하고 ```PATH``` 시스템 환경 변수에 다운로드한 경로 추가   
 테스트 안해봄
 # 사용법
 ```sh
