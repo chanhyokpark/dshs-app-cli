@@ -430,9 +430,18 @@ class Client:
 parser = argparse.ArgumentParser(description="dshs.app CLI")
 # parser.register("action", "parsers", AliasedSubParsersAction)
 subparsers = parser.add_subparsers(dest="command")
-subparsers.required = True
+subparsers.required = False
 auth_parser = subparsers.add_parser("auth", aliases=["a"])
 auth_parser.add_argument("-c", "--code", dest="code", required=False)
+auth_parser.add_argument(
+    "-l",
+    "--link",
+    dest="link",
+    required=False,
+    default=False,
+    action="store_true",
+    help="웹페이지를 열지 않고 링크만 제공",
+)
 update_parser = subparsers.add_parser("update", help="이 앱 업데이트")
 userinfo_parser = subparsers.add_parser("userinfo", help="사용자 정보")
 userinfo_parser.add_argument(
@@ -590,166 +599,185 @@ if (
             config.set("update-checked", datetime.now().strftime("%Y%m%d"))
     except Exception:
         pass
-try:
-    if args.command in ["auth", "a"]:
-        if args.code:
-            api.get_code(code=args.code)
-        else:
-            api.get_code()
-    elif args.command in ["userinfo"]:
-        res = api.userinfo()
-        if args.field:
-            if args.field in res.keys():
-                print(res[args.field])
-            else:
-                logger.error("존재하지 않는 필드")
-        else:
-            print(json.dumps(res, indent=4, ensure_ascii=False))
-    elif args.command in ["penalty", "p"]:
-        res = None
-        if not args.recent:
-            res = api.penalty((datetime.now() - timedelta(days=7)).strftime("%Y%m%d"))
-        else:
-            res = api.penalty()
-        print(
-            f"전체 벌점: {bold}{green if res['total']<0 else (red if res['total']>=30 else (yellow if res['total']>=20 else ''))}{res['total']}점"
-        )
-        print(reset, end="")
-        if not args.only_points:
-            print("벌점 내역:\n")
-            for d in res["data"]:
-                try:
-                    print(
-                        f'일자: {(datetime.fromisoformat(d["date"].replace("Z", "+00:00"))+timedelta(hours=9)).strftime("%Y.%m.%d")}'
-                    )
-                    print(
-                        f'점수: {(red+"+") if d["points"]>0 else green}{d["points"]}점{reset}'
-                    )
-                    print(f"사유: {d['reason']}")
-                    print(f"부과 교사: {d['giver']['name']}")
-                    print("____________")
-                    print()
-                except Exception:
-                    pass
-    elif args.command in ["meal"]:
-        d = None
-        if len(args.date) == 4:
-            d = datetime.now().year + args.date
-        else:
-            d = args.date
-        data = api.meal(d)
-        if not data:
-            print("급식 없음")
-        else:
-            print(
-                bold
-                + datetime.strptime(d, "%Y%m%d").strftime("%Y년 %m월 %d일")
-                + "의 급식\n"
-                + reset
-            )
-            mn = ["아침", "점심", "저녁"]
-            for i in range(3):
-                print(bold + mn[i] + reset)
-                print(data[i])
-                print()
-    elif args.command in "update":
-        res = api.check_update()
-        if res["update"]:
-            print(f'새 버전: {res["version"]}')
-            print(f'다운로드 링크: {res["download_link"]}')
-        else:
-            print("최신 버전입니다.")
-            config.set("update-checked", datetime.now().strftime("%Y%m%d"))
-    elif args.command in ["reserve", "r", "rt"]:
-        query = args.q
-        input_date = "tomorrow" if args.command == "rt" else args.date
-        date = datetime.now()
-        if input_date == "today":
-            date = datetime.now()
-        elif input_date == "tomorrow":
-            date = datetime.now() + timedelta(days=1)
-        else:
-            date = datetime.strptime(input_date, "%Y%m%d")
-        if re.match(r"^[abs]$", query):
-            room_info = api.get_space_room(query)
-            room_reserve_info = api.get_room(date, query)
-            print(f"{bold}{query}({room_info['description']}){reset}")
-            if query in ["a", "b"]:
-                try:
-                    from imgcat import imgcat
-                    from PIL import Image
 
-                    img = None
-                    with Loader("이미지 다운로드 중...") as loader:
-                        img = Image.open(
-                            requests.get(
-                                base_address + query + "_labeled.png", stream=True
-                            ).raw
+repeat = not args.command
+if repeat:
+    if not is_interactive:
+        logger.warning("인터렉티브 터미널이 아닙니다.")
+    logger.info("CTRL+C로 종료")
+while True:
+    try:
+        if repeat:
+            args = parser.parse_args(input(bold + green + "> " + reset).split())
+        if args.command in ["auth", "a"]:
+            if args.code:
+                api.get_code(code=args.code)
+            else:
+                api.get_code(browser=not args.link)
+        elif args.command in ["userinfo"]:
+            res = api.userinfo()
+            if args.field:
+                if args.field in res.keys():
+                    print(res[args.field])
+                else:
+                    logger.error("존재하지 않는 필드")
+            else:
+                print(json.dumps(res, indent=4, ensure_ascii=False))
+        elif args.command in ["penalty", "p"]:
+            res = None
+            if not args.recent:
+                res = api.penalty(
+                    (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
+                )
+            else:
+                res = api.penalty()
+            print(
+                f"전체 벌점: {bold}{green if res['total']<0 else (red if res['total']>=30 else (yellow if res['total']>=20 else ''))}{res['total']}점"
+            )
+            print(reset, end="")
+            if not args.only_points:
+                print("벌점 내역:\n")
+                for d in res["data"]:
+                    try:
+                        print(
+                            f'일자: {(datetime.fromisoformat(d["date"].replace("Z", "+00:00"))+timedelta(hours=9)).strftime("%Y.%m.%d")}'
                         )
-                    imgcat(img)
-                except Exception:
-                    pass
-            for i in range(len(room_info["areas"])):
-                print(f"{room_info['areas'][i]['area_name']}: ", end="")
-                seat_count = room_info["areas"][i]["count"]
-                seat_occupied = room_reserve_info["areas"][i]["occupied"]
+                        print(
+                            f'점수: {(red+"+") if d["points"]>0 else green}{d["points"]}점{reset}'
+                        )
+                        print(f"사유: {d['reason']}")
+                        print(f"부과 교사: {d['giver']['name']}")
+                        print("____________")
+                        print()
+                    except Exception:
+                        pass
+        elif args.command in ["meal"]:
+            d = None
+            if len(args.date) == 4:
+                d = datetime.now().year + args.date
+            else:
+                d = args.date
+            data = api.meal(d)
+            if not data:
+                print("급식 없음")
+            else:
+                print(
+                    bold
+                    + datetime.strptime(d, "%Y%m%d").strftime("%Y년 %m월 %d일")
+                    + "의 급식\n"
+                    + reset
+                )
+                mn = ["아침", "점심", "저녁"]
+                for i in range(3):
+                    print(bold + mn[i] + reset)
+                    print(data[i])
+                    print()
+        elif args.command == "update":
+            res = api.check_update()
+            if res["update"]:
+                print(f'새 버전: {res["version"]}')
+                print(f'다운로드 링크: {res["download_link"]}')
+            else:
+                print("최신 버전입니다.")
+                config.set("update-checked", datetime.now().strftime("%Y%m%d"))
+        elif args.command in ["reserve", "r", "rt"]:
+            query = args.q
+            input_date = "tomorrow" if args.command == "rt" else args.date
+            date = datetime.now()
+            if input_date == "today":
+                date = datetime.now()
+            elif input_date == "tomorrow":
+                date = datetime.now() + timedelta(days=1)
+            else:
+                date = datetime.strptime(input_date, "%Y%m%d")
+            if re.match(r"^[abs]$", query):
+                room_info = api.get_space_room(query)
+                room_reserve_info = api.get_room(date, query)
+                print(f"{bold}{query}({room_info['description']}){reset}")
+                if query in ["a", "b"]:
+                    try:
+                        from imgcat import imgcat
+                        from PIL import Image
+
+                        img = None
+                        with Loader("이미지 다운로드 중...") as loader:
+                            img = Image.open(
+                                requests.get(
+                                    base_address + query + "_labeled.png", stream=True
+                                ).raw
+                            )
+                        imgcat(img)
+                    except Exception:
+                        pass
+                for i in range(len(room_info["areas"])):
+                    print(f"{room_info['areas'][i]['area_name']}: ", end="")
+                    seat_count = room_info["areas"][i]["count"]
+                    seat_occupied = room_reserve_info["areas"][i]["occupied"]
+                    print(
+                        f"{bold}{yellow if seat_count>seat_occupied else red}{seat_occupied}{reset}/{bold}{seat_count}{reset}"
+                    )
+            elif re.match(r"^[abs](\d|\d{3})$", query):
+                highlight_seat = ""
+                if len(query) == 4:
+                    if args.create:
+                        try:
+                            res = api.reserve(date, query)
+                            print(bold + green + f"좌석 {query}에 신청했습니다." + reset)
+                        except Exception:
+                            pass
+                    highlight_seat = query
+                    query = query[:2]
+
+                area_info = api.get_space_area(query)
+                area_reserve_info = api.get_area(date, query)
+                seat_count = area_info["count"]
+                seat_occupied = 0
+                if area_reserve_info:
+                    seat_occupied = area_reserve_info["occupied"]
+                print(f"{bold}{query}{reset}")
+
+                print("신청 현황: ", end="")
                 print(
                     f"{bold}{yellow if seat_count>seat_occupied else red}{seat_occupied}{reset}/{bold}{seat_count}{reset}"
                 )
-        elif re.match(r"^[abs](\d|\d{3})$", query):
-            highlight_seat = ""
-            if len(query) == 4:
-                if args.create:
-                    try:
-                        res = api.reserve(date, query)
-                        print(bold + green + f"좌석 {query}에 신청했습니다." + reset)
-                    except Exception:
-                        pass
-                highlight_seat = query
-                query = query[:2]
-
-            area_info = api.get_space_area(query)
-            area_reserve_info = api.get_area(date, query)
-            seat_count = area_info["count"]
-            seat_occupied = 0
-            if area_reserve_info:
-                seat_occupied = area_reserve_info["occupied"]
-            print(f"{bold}{query}{reset}")
-
-            print("신청 현황: ", end="")
-            print(
-                f"{bold}{yellow if seat_count>seat_occupied else red}{seat_occupied}{reset}/{bold}{seat_count}{reset}"
-            )
-            process_table(
-                area_info,
-                area_reserve_info,
-                highlight_seat,
-                config.get("student-id"),
-                False,
-            )
-        elif query == "me" or re.match(r"^([가-힣]{2,5})|([1-3]\d{3})$", query):
-            res = {}
-            if query == "me":
-                res = api.search_me(date)
-            else:
-                res = api.search(date, query)
-            if not res:
-                print("오류")
-            else:
-                print(
-                    f"{bold}{res['user']['student_id']} {res['user']['name']}", end=""
+                process_table(
+                    area_info,
+                    area_reserve_info,
+                    highlight_seat,
+                    config.get("student-id"),
+                    False,
                 )
-                if "alias" in res["user"].keys():
-                    print(f"('{res['user']['alias']}')", end="")
-                print(reset)
-                print(
-                    f"신청 좌석: {bold}{res['seat_name'] if res['seat_name'] else '없음'}{reset}"
-                )
+            elif query == "me" or re.match(r"^([가-힣]{2,5})|([1-3]\d{3})$", query):
+                res = {}
+                if query == "me":
+                    res = api.search_me(date)
+                else:
+                    res = api.search(date, query)
+                if not res:
+                    print("오류")
+                else:
+                    print(
+                        f"{bold}{res['user']['student_id']} {res['user']['name']}",
+                        end="",
+                    )
+                    if "alias" in res["user"].keys():
+                        print(f"('{res['user']['alias']}')", end="")
+                    print(reset)
+                    print(
+                        f"신청 좌석: {bold}{res['seat_name'] if res['seat_name'] else '없음'}{reset}"
+                    )
+            else:
+                logger.error(f"'{query}': 올바르지 않은 검색어입니다.")
         else:
-            logger.error(f"'{query}': 올바르지 않은 검색어입니다.")
-
-    config.save()
-except Exception as e:
-    print(e)
-    logger.info("명령 실행 실패.")
-    exit(1)
+            logger.error("명령어를 입력하세요")
+        config.save()
+        if not repeat:
+            exit(0)
+    except KeyboardInterrupt:
+        logger.info("\n종료")
+        exit(0)
+    except Exception as e:
+        print(e)
+        logger.info("명령 실행 실패.")
+        if not repeat:
+            exit(1)
