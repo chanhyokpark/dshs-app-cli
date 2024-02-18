@@ -42,6 +42,8 @@ red = "\033[91m"
 bold_red = "\x1b[31;1m"
 green = "\033[92m"
 reset = "\x1b[0m"
+bg_blue = "\x1b[44m"
+underline = "\033[4m"
 
 
 class CustomFormatter(logging.Formatter):
@@ -535,9 +537,9 @@ def transform_table(r, c, seats, reserve_dict, highlight_seat, student_id, disab
             if seat in keys:
                 d = reserve_dict[seat]
                 seat = (
-                    (bold if highlight_seat == seat else "")
-                    + (blue if d["student_id"] == student_id else grey)
-                    + seat
+                    ((bold + bg_blue) if highlight_seat == seat else "")
+                    + (red if d["student_id"] == student_id else grey)
+                    + (seat if seat != "0" else "")
                     + reset
                 )
                 name = d["name"]
@@ -546,9 +548,9 @@ def transform_table(r, c, seats, reserve_dict, highlight_seat, student_id, disab
                 seat += f"\n{name}"
             else:
                 seat = (
-                    (bold if highlight_seat == seat else "")
+                    ((bold + bg_blue) if highlight_seat == seat else "")
                     + (grey if disabled else green)
-                    + seat
+                    + (seat if seat != "0" else "")
                     + reset
                 )
                 seat += "\n-"
@@ -716,58 +718,63 @@ while True:
                     print(
                         f"{bold}{yellow if seat_count>seat_occupied else red}{seat_occupied}{reset}/{bold}{seat_count}{reset}"
                     )
-            elif re.match(r"^[abs](\d|\d{3})$", query):
-                highlight_seat = ""
-                if len(query) == 4:
-                    if args.create:
-                        try:
-                            res = api.reserve(date, query)
-                            print(bold + green + f"좌석 {query}에 신청했습니다." + reset)
-                        except Exception:
-                            pass
-                    highlight_seat = query
-                    query = query[:2]
-
-                area_info = api.get_space_area(query)
-                area_reserve_info = api.get_area(date, query)
-                seat_count = area_info["count"]
-                seat_occupied = 0
-                if area_reserve_info:
-                    seat_occupied = area_reserve_info["occupied"]
-                print(f"{bold}{query}{reset}")
-
-                print("신청 현황: ", end="")
-                print(
-                    f"{bold}{yellow if seat_count>seat_occupied else red}{seat_occupied}{reset}/{bold}{seat_count}{reset}"
-                )
-                process_table(
-                    area_info,
-                    area_reserve_info,
-                    highlight_seat,
-                    config.get("student-id"),
-                    False,
-                )
-            elif query == "me" or re.match(r"^([가-힣]{2,5})|([1-3]\d{3})$", query):
-                res = {}
-                if query == "me":
-                    res = api.search_me(date)
-                else:
-                    res = api.search(date, query)
-                if not res:
-                    print("오류")
-                else:
-                    print(
-                        f"{bold}{res['user']['student_id']} {res['user']['name']}",
-                        end="",
-                    )
-                    if "alias" in res["user"].keys():
-                        print(f"('{res['user']['alias']}')", end="")
-                    print(reset)
-                    print(
-                        f"신청 좌석: {bold}{res['seat_name'] if res['seat_name'] else '없음'}{reset}"
-                    )
             else:
-                logger.error(f"'{query}': 올바르지 않은 검색어입니다.")
+                if query == "me" or re.match(
+                    r"^(([가-힣]{2,5}(\d?))|([1-3]\d{3}))$", query
+                ):
+                    res = {}
+                    if query == "me":
+                        res = api.search_me(date)
+                    else:
+                        res = api.search(date, query)
+                    if not res:
+                        print("오류")
+                        query = ""
+                    else:
+                        print(
+                            f"{bold}{res['user']['student_id']} {res['user']['name']}",
+                            end="",
+                        )
+                        if "alias" in res["user"].keys():
+                            print(f"('{res['user']['alias']}')", end="")
+                        print(reset)
+                        print(
+                            f"신청 좌석: {bold}{res['seat_name'] if res['seat_name'] else '없음'}{reset}"
+                        )
+                        query = res["seat_name"] or ""
+                if re.match(r"^[abs](\d|\d{3})$", query):
+                    highlight_seat = ""
+                    if len(query) == 4:
+                        if args.create:
+                            try:
+                                res = api.reserve(date, query)
+                                print(bold + green + f"좌석 {query}에 신청했습니다." + reset)
+                            except Exception:
+                                pass
+                        highlight_seat = query
+                        query = query[:2]
+
+                    area_info = api.get_space_area(query)
+                    area_reserve_info = api.get_area(date, query)
+                    seat_count = area_info["count"]
+                    seat_occupied = 0
+                    if area_reserve_info:
+                        seat_occupied = area_reserve_info["occupied"]
+                    print(f"{bold}{query}{reset}")
+
+                    print("신청 현황: ", end="")
+                    print(
+                        f"{bold}{yellow if seat_count>seat_occupied else red}{seat_occupied}{reset}/{bold}{seat_count}{reset}"
+                    )
+                    process_table(
+                        area_info,
+                        area_reserve_info,
+                        highlight_seat,
+                        config.get("student-id"),
+                        False,
+                    )
+                elif len(query):
+                    logger.error(f"'{query}': 올바르지 않은 검색어입니다.")
         else:
             logger.error("명령어를 입력하세요")
         config.save()
