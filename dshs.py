@@ -75,9 +75,12 @@ ch.setFormatter(CustomFormatter())
 
 logger.addHandler(ch)
 
+is_interactive = os.isatty(sys.stdout.fileno())
+
 
 class Loader:
     # https://stackoverflow.com/questions/22029562/python-how-to-make-simple-animated-loading-while-process-is-running
+    # TODO: 인터렉티브 아니면 로딩 표시하지 않기
     def __init__(self, desc="Loading...", end="", timeout=0.1):
         """
         A loader-like context manager
@@ -120,12 +123,14 @@ class Loader:
         self.stop()
 
 
-is_interactive = os.isatty(sys.stdout.fileno())
 config_path = os.path.join(os.path.expanduser("~"), ".dshsconfig.json")
 
 
 class Config:
     def __init__(self):
+        if not os.path.exists(config_path):
+            with open(config_path, "w+", encoding="utf-8") as f:
+                f.write("{}")
         with open(config_path, "r", encoding="utf-8") as f:
             self.config = json.load(f)
 
@@ -154,9 +159,11 @@ client_secret = config.get("client_secret") or "ddd"
 
 def use_loader(func):
     def wrapper(*args, **kwargs):
-        with Loader(bold + func.__name__.upper() + " " + args[1] + reset):
-            res = func(*args, **kwargs)
-            return res
+        if is_interactive:
+            with Loader(bold + func.__name__.upper() + " " + args[1] + reset):
+                return func(*args, **kwargs)
+        else:
+            return func(*args, **kwargs)
 
     return wrapper
 
@@ -323,6 +330,7 @@ class Client:
         else:
             if c is None:
                 print(f"{url} 에 접속한 뒤 다음 명령어를 실행하세요:\ndshs auth --code {{코드}}")
+                return
         try:
             self.auth.get_access_token(c)
         except requests.exceptions.HTTPError as e:
@@ -696,7 +704,7 @@ while True:
                 room_info = api.get_space_room(query)
                 room_reserve_info = api.get_room(date, query)
                 print(f"{bold}{query}({room_info['description']}){reset}")
-                if query in ["a", "b"]:
+                if query in ["a", "b"] and is_interactive:
                     try:
                         from imgcat import imgcat
                         from PIL import Image
