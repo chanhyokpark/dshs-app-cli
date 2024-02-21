@@ -441,7 +441,7 @@ parser = argparse.ArgumentParser(description="dshs.app CLI")
 # parser.register("action", "parsers", AliasedSubParsersAction)
 subparsers = parser.add_subparsers(dest="command")
 subparsers.required = False
-auth_parser = subparsers.add_parser("auth", aliases=["a"])
+auth_parser = subparsers.add_parser("auth", aliases=["a"], help="로그인")
 auth_parser.add_argument("-c", "--code", dest="code", required=False)
 auth_parser.add_argument(
     "-l",
@@ -526,13 +526,16 @@ def print_table(data, vertical=False):  # 3d 배열
             s = s.replace("*", "\n")
         res = s
     width = len(res.split("\n")[0])
-    if width > os.get_terminal_size().columns:
-        logger.warning("터미널 크기가 너무 작습니다. 크기 변경을 시도합니다.")
-        sys.stdout.write(
-            "\x1b[8;{rows};{cols}t".format(
-                rows=os.get_terminal_size().lines, cols=width + 1
+    try:
+        if width > os.get_terminal_size().columns:
+            logger.warning("터미널 크기가 너무 작습니다. 크기 변경을 시도합니다.")
+            sys.stdout.write(
+                "\x1b[8;{rows};{cols}t".format(
+                    rows=os.get_terminal_size().lines, cols=width + 1
+                )
             )
-        )
+    except Exception:
+        pass
     print(res)
 
 
@@ -613,12 +616,15 @@ if (
 repeat = not args.command
 if repeat:
     if not is_interactive:
-        logger.warning("인터렉티브 터미널이 아닙니다.")
+        logger.warning("인터랙티브 터미널이 아닙니다.")
     logger.info("CTRL+C로 종료")
+passed_input = False
 while True:
     try:
         if repeat:
+            passed_input = False
             args = parser.parse_args(input(bold + green + "> " + reset).split())
+            passed_input = True
         if args.command in ["auth", "a"]:
             if args.code:
                 api.get_code(code=args.code)
@@ -796,3 +802,6 @@ while True:
         logger.info("명령 실행 실패.")
         if not repeat:
             exit(1)
+    except SystemExit as e:
+        if not repeat and not passed_input:
+            raise e
