@@ -259,9 +259,14 @@ class Client:
                 raise e
 
     def check_update(self):
-        res = self.requester.get("check-cli-update", {"current-version": version})
-        return res
-        # return {"update": False}
+        next_ver = requests.get(
+            "https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/version"
+        ).text
+        return {
+            "update": next_ver != version,
+            "version": next_ver,
+            "download_link": "https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/dshs.py",
+        }
 
     @error_handler
     def userinfo(self):
@@ -453,6 +458,12 @@ auth_parser.add_argument(
     help="웹페이지를 열지 않고 링크만 제공",
 )
 update_parser = subparsers.add_parser("update", help="이 앱 업데이트")
+update_parser.add_argument(
+    "-p", "--pull", action="store_true", dest="pull", help="업데이트가 감지되면 바로 git pull 실행"
+)
+update_parser.add_argument(
+    "-f", "--force", action="store_true", dest="force", help="강제로 업데이트"
+)
 userinfo_parser = subparsers.add_parser("userinfo", help="사용자 정보")
 userinfo_parser.add_argument(
     "field", nargs="?", help="name, student_id 등 필드, 비어 있으면 전체 json 출력"
@@ -692,6 +703,10 @@ while True:
             res = api.check_update()
             if res["update"]:
                 print(f'새 버전: {res["version"]}')
+                if args.pull:
+                    file_path = os.path.abspath(os.path.dirname(__file__))
+                    os.system(f'git -C "{file_path}" pull')
+                    exit(0)
                 print(f'다운로드 링크: {res["download_link"]}')
             else:
                 print("최신 버전입니다.")
