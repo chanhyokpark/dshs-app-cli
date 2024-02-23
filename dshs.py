@@ -263,7 +263,7 @@ class Client:
             "https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/version"
         ).text
         return {
-            "update": next_ver != version,
+            "update": next_ver.strip() != version,
             "version": next_ver,
             "download_link": "https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/dshs.py",
         }
@@ -700,11 +700,13 @@ while True:
                     print(data[i])
                     print()
         elif args.command == "update":
+            print(f"현재 버전: {version}")
             res = api.check_update()
-            if res["update"]:
+            if res["update"] or args.force:
                 print(f'새 버전: {res["version"]}')
                 if args.pull:
-                    file_path = os.path.abspath(os.path.dirname(__file__))
+                    file_path = os.path.dirname(os.path.realpath(__file__))
+                    print(f'git -C "{file_path}" pull')
                     os.system(f'git -C "{file_path}" pull')
                     exit(0)
                 print(f'다운로드 링크: {res["download_link"]}')
