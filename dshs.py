@@ -723,6 +723,7 @@ while True:
                                 ).raw
                             )
                         imgcat(img)
+                        print("")
                     except Exception:
                         pass
                 for i in range(len(room_info["areas"])):
