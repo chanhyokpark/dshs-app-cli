@@ -820,5 +820,5 @@ while True:
         if not repeat:
             exit(1)
     except SystemExit as e:
-        if not repeat and not passed_input:
+        if not repeat or passed_input:
             raise e
