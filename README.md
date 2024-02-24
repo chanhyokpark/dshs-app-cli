@@ -26,8 +26,7 @@ curl.exe --output dshs.py --url https://raw.githubusercontent.com/chanhyokpark/d
 curl.exe --output requirements.txt --url https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/requirements.txt
 pip install -r requirements.txt
 echo @echo off>dshs.bat
-echo cd /D "%~dp0">>dshs.bat
-echo python dshs.py %*>> dshs.bat
+echo cmd /c "cd /D "%~dp0" & python dshs.py %*">> dshs.bat
 ```
 
 ```PATH``` 시스템 환경 변수에 다운로드한 경로 추가   
