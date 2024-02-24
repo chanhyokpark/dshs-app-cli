@@ -54,4 +54,4 @@ options:
 ```
 # 기타
 + 설정 파일은 사용자 폴더의 ```.dshsconfig.json```에 저장됨
-+ ```client-id```와 ```client-secret``` 키를 추가해서 해당 clent id 사용 가능
++ ```client_id```와 ```client_secret``` 키를 추가해서 해당 clent id 사용 가능
