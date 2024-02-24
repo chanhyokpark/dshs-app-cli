@@ -21,6 +21,8 @@ ln -s ~/.local/bin/dshs {path/to/dshs.py}
 ## Windows
 ```bat
 cmd
+```
+```bat
 mkdir dshs-app-cli
 cd dshs-app-cli
 curl.exe --output dshs.py --url https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/dshs.py
