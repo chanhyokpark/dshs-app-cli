@@ -19,13 +19,15 @@ ln -s ~/.local/bin/dshs {path/to/dshs.py}
 ```
 ({path/to/dshs.py}를 해당 위치로 변경)
 ## Windows
-```sh
+```bat
 mkdir dshs-app-cli
 cd dshs-app-cli
 curl.exe --output dshs.py --url https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/dshs.py
 curl.exe --output requirements.txt --url https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/requirements.txt
 pip install -r requirements.txt
-echo "python dshs.py %*"> dshs.bat
+echo @echo off>dshs.bat
+echo cd /D "%~dp0">>dshs.bat
+echo python dshs.py %*>> dshs.bat
 ```
 
 ```PATH``` 시스템 환경 변수에 다운로드한 경로 추가   
