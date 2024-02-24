@@ -343,6 +343,7 @@ class Client:
                     logger.error("로그인에 실패했습니다. 코드가 틀렸습니다.")
             raise Exception
         logger.info("로그인 성공")
+        exit(0)
 
     @error_handler
     def get_space_room(self, room):
