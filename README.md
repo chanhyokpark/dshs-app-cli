@@ -25,7 +25,7 @@ cd dshs-app-cli
 curl.exe --output dshs.py --url https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/dshs.py
 curl.exe --output requirements.txt --url https://raw.githubusercontent.com/chanhyokpark/dshs-app-cli/main/requirements.txt
 pip install -r requirements.txt
-echo @echo off>dshs.bat
+echo @echo off> dshs.bat
 echo cmd /c "cd /D "%~dp0" & python dshs.py %*">> dshs.bat
 ```
 
