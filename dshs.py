@@ -239,6 +239,7 @@ class Auth:
         config.set(
             "student-id", Requester(self.access_token).get("userinfo")["student_id"]
         )
+        config.save()
 
 
 class Client:
@@ -343,6 +344,7 @@ class Client:
                     logger.error("로그인에 실패했습니다. 코드가 틀렸습니다.")
             raise Exception
         logger.info("로그인 성공")
+
         exit(0)
 
     @error_handler
