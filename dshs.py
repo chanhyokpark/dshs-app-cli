@@ -3,7 +3,7 @@
 DSHS.PY
 dshs.app을 cli에서 접근할 수 있도록 하는 Python 코드
 작동하면 된다는 마인드로 최대한 대충 짬
-버전 0.1.0
+버전 0.1.1
 """
 import argparse
 import json
@@ -30,7 +30,7 @@ except ImportError:
 import os
 import sys
 
-version = "0.1.0"
+version = "0.1.1"
 
 grey = "\x1b[38;21m"
 yellow = "\x1b[33m"
@@ -683,7 +683,7 @@ while True:
         elif args.command in ["meal"]:
             d = None
             if len(args.date) == 4:
-                d = datetime.now().year + args.date
+                d = str(datetime.now().year) + args.date
             else:
                 d = args.date
             data = api.meal(d)
