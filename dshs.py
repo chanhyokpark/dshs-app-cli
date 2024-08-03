@@ -3,7 +3,7 @@
 DSHS.PY
 dshs.app을 cli에서 접근할 수 있도록 하는 Python 코드
 작동하면 된다는 마인드로 최대한 대충 짬
-버전 0.1.1
+버전 0.1.2
 """
 import argparse
 import json
@@ -419,7 +419,8 @@ class Client:
 
     @error_handler
     def search_me(self, date: datetime):
-        res = self.requester.get(f"reservations/{date.strftime('%Y%m%d')}")
+        # res = self.requester.get(f"reservations/{date.strftime('%Y%m%d')}")
+        res = self.requester.get(f"reservations/{date.strftime('%Y%m%d')}/search", {"q": "me"})
         return res
 
     @error_handler
