@@ -30,7 +30,7 @@ except ImportError:
 import os
 import sys
 
-version = "0.1.1"
+version = "0.1.2"
 
 grey = "\x1b[38;21m"
 yellow = "\x1b[33m"
