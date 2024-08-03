@@ -717,6 +717,7 @@ while True:
                 print("최신 버전입니다.")
                 config.set("update-checked", datetime.now().strftime("%Y%m%d"))
         elif args.command in ["reserve", "r", "rt"]:
+            logger.warning("지원이 일시 중단되었습니다. 이 명령어는 실패할 것입니다.")
             query = args.q
             input_date = "tomorrow" if args.command == "rt" else args.date
             date = datetime.now()
